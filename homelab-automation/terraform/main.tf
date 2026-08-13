@@ -90,6 +90,14 @@ resource "null_resource" "flux_bootstrap" {
       KCFG="${path.module}/kubeconfigs/${each.key}.yaml"
       mkdir -p "${path.module}/kubeconfigs"
 
+      # Every clone gets a fresh SSH host key (by design — see provision.sh).
+      # If this IP was previously used by a VM we destroyed, Larry's
+      # known_hosts still has the OLD key on file, which makes even
+      # accept-new refuse to connect ("REMOTE HOST IDENTIFICATION HAS
+      # CHANGED"). Purge any stale entry before every run so repeated
+      # destroy/apply cycles at the same IP never get stuck.
+      ssh-keygen -R "$NODE_IP" >/dev/null 2>&1 || true
+
       echo ">> [${each.key}] waiting for SSH + k3s kubeconfig on $NODE_IP..."
       for i in $(seq 1 60); do
         ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 \
