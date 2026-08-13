@@ -64,3 +64,59 @@ resource "proxmox_virtual_environment_vm" "k3s_node" {
     ]
   }
 }
+
+# --- Everything below runs ON THE MACHINE WHERE YOU RUN `terraform apply`
+# --- i.e. your jumpbox. Nothing here ever gets written into the VM, a
+# --- Proxmox snippet, or Terraform state — it shells out locally, the same
+# --- way you already `flux bootstrap github ...` by hand after SSHing to
+# --- fetch a kubeconfig. GITHUB_TOKEN is inherited from your shell's
+# --- environment (you already export it before running terraform apply);
+# --- it is never referenced as a Terraform variable, so it can't leak into
+# --- state or plan output.
+resource "null_resource" "flux_bootstrap" {
+  for_each = var.clusters
+
+  depends_on = [proxmox_virtual_environment_vm.k3s_node]
+
+  triggers = {
+    vm_id = proxmox_virtual_environment_vm.k3s_node[each.key].vm_id
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    command     = <<-EOT
+      set -euo pipefail
+      NODE_IP="${split("/", each.value.ip_address)[0]}"
+      KCFG="${path.module}/kubeconfigs/${each.key}.yaml"
+      mkdir -p "${path.module}/kubeconfigs"
+
+      echo ">> [${each.key}] waiting for SSH + k3s kubeconfig on $NODE_IP..."
+      for i in $(seq 1 60); do
+        ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 \
+          ${var.admin_username}@$NODE_IP \
+          "test -f /home/${var.admin_username}/.kube/config" && break
+        sleep 5
+      done
+
+      scp -o StrictHostKeyChecking=accept-new \
+        ${var.admin_username}@$NODE_IP:/home/${var.admin_username}/.kube/config "$KCFG"
+      sed -i "s/127.0.0.1/$NODE_IP/" "$KCFG"
+      chmod 600 "$KCFG"
+
+      echo ">> [${each.key}] running flux bootstrap..."
+      export KUBECONFIG="$KCFG"
+      flux bootstrap github \
+        --owner="${var.github_user}" \
+        --repository="${var.github_repo}" \
+        --branch="${var.github_branch}" \
+        --path="${each.value.flux_path}" \
+        --personal
+
+      echo ">> [${each.key}] applying sops-age secret for flux decryption..."
+      kubectl create secret generic sops-age \
+        -n flux-system \
+        --from-file=age.agekey="${var.age_key_path}" \
+        --dry-run=client -o yaml | kubectl apply -f -
+    EOT
+  }
+}

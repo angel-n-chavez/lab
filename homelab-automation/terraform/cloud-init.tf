@@ -17,11 +17,11 @@ resource "proxmox_virtual_environment_file" "user_data" {
       hostname       = each.value.hostname
       admin_username = var.admin_username
       ssh_public_key = var.ssh_public_key
-      github_user    = var.github_user
-      github_repo    = var.github_repo
-      github_branch  = var.github_branch
-      github_token   = var.github_token
-      flux_path      = each.value.flux_path
     })
+    # Note: no GitHub token, no Flux install, nothing GitOps-related in here
+    # on purpose — this node only ever gets k3s. Flux bootstrap happens from
+    # the jumpbox in main.tf's null_resource, using your already-exported
+    # GITHUB_TOKEN and local age key, so neither ever touches this snippet,
+    # the Proxmox host, or Terraform state.
   }
 }

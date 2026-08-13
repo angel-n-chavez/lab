@@ -70,11 +70,15 @@ variable "github_branch" {
   default = "main"
 }
 
-variable "github_token" {
+variable "age_key_path" {
   type        = string
-  sensitive   = true
-  description = "GitHub PAT with repo scope, used once by `flux bootstrap` on each node. Pass via TF_VAR_github_token, don't put it in tfvars."
+  description = "Path on the jumpbox (where you run terraform apply) to your existing SOPS age private key, e.g. ~/.config/sops/age/keys.txt"
 }
+
+# NOTE: no github_token variable here on purpose. Flux bootstrap runs via
+# local-exec on the jumpbox in main.tf, which inherits GITHUB_TOKEN from
+# your shell's environment exactly like your manual workflow already does.
+# Keeping it out of Terraform variables means it never touches state.
 
 # One entry per k3s node/cluster. Mirrors your two-VM (staging/prod) setup
 # on the single Proxmox host — add more entries here if the lab grows.
@@ -91,6 +95,9 @@ variable "clusters" {
     flux_path   = string # e.g. "./clusters/staging"
   }))
 
+  # NOTE: 10.10.10.x here is a placeholder within your actual flat subnet
+  # (10.10.10.0/24) — confirm these don't collide with your jumpbox,
+  # Proxmox host, or DHCP range before applying, and adjust as needed.
   default = {
     staging = {
       vm_id      = 201
@@ -98,8 +105,8 @@ variable "clusters" {
       vcpus      = 2
       memory_mb  = 4096
       disk_gb    = 40
-      ip_address = "10.0.10.11/24"
-      gateway    = "10.0.10.1"
+      ip_address = "10.10.10.21/24"
+      gateway    = "10.10.10.1"
       flux_path  = "./clusters/staging"
     }
     production = {
@@ -108,8 +115,8 @@ variable "clusters" {
       vcpus      = 4
       memory_mb  = 8192
       disk_gb    = 60
-      ip_address = "10.0.10.12/24"
-      gateway    = "10.0.10.1"
+      ip_address = "10.10.10.22/24"
+      gateway    = "10.10.10.1"
       flux_path  = "./clusters/production"
     }
   }

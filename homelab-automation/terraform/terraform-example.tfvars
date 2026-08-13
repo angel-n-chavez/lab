@@ -17,5 +17,10 @@ github_user   = "angel-n-chavez"
 github_repo   = "homelab"
 github_branch = "main"
 
-# clusters map already has sensible staging/production defaults in
-# variables.tf — override here only if IPs/sizing need to change.
+# Path on the jumpbox to your existing age private key (used to seed the
+# sops-age secret in flux-system on each new cluster).
+age_key_path = "~/.config/sops/age/keys.txt"
+
+# clusters map already has placeholder staging/production IPs in
+# variables.tf within 10.10.10.0/24 — override here to match real,
+# unused addresses on your flat subnet before applying.

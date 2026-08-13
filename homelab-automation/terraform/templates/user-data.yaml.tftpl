@@ -41,28 +41,13 @@ runcmd:
     done
 
   # Kubeconfig readable by the admin user, same as your manual "cp to non-root, chown" step.
+  # This is also what Terraform's local-exec step (in main.tf) scp's back to
+  # the jumpbox in order to run `flux bootstrap` from there — this node
+  # never runs Flux or sees a GitHub token itself, matching how you already
+  # work from the jumpbox.
   - mkdir -p /home/${admin_username}/.kube
   - cp /etc/rancher/k3s/k3s.yaml /home/${admin_username}/.kube/config
   - chown -R ${admin_username}:${admin_username} /home/${admin_username}/.kube
   - chmod 600 /home/${admin_username}/.kube/config
 
-  # --- Flux CLI + bootstrap ---
-  - curl -s https://fluxcd.io/install.sh | bash
-  - ln -sf /root/.local/bin/flux /usr/local/bin/flux
-
-  - |
-    export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-    export GITHUB_TOKEN="${github_token}"
-    export GITHUB_USER="${github_user}"
-    /usr/local/bin/flux bootstrap github \
-      --owner="$GITHUB_USER" \
-      --repository=${github_repo} \
-      --branch=${github_branch} \
-      --path=${flux_path} \
-      --personal \
-      >> /var/log/flux-bootstrap.log 2>&1
-
-  # Don't leave the token sitting in shell history / env after the fact.
-  - unset GITHUB_TOKEN
-
-final_message: "${hostname} ready: k3s up, Flux bootstrap attempted (see /var/log/flux-bootstrap.log). Boot took $UPTIME seconds."
+final_message: "${hostname} ready: k3s up, kubeconfig staged at ~/.kube/config for the jumpbox to fetch. Boot took $UPTIME seconds."
