@@ -12,7 +12,7 @@ apt-get upgrade -y
 
 # qemu-guest-agent: already installed via preseed pkgsel, but make sure
 # it's enabled. cloud-init: not in preseed, install it here.
-apt-get install -y qemu-guest-agent cloud-init cloud-utils growpart
+apt-get install -y qemu-guest-agent cloud-init cloud-utils 
 
 systemctl enable qemu-guest-agent
 

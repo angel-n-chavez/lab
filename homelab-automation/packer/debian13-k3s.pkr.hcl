@@ -1,7 +1,7 @@
 packer {
   required_plugins {
     proxmox = {
-      version = ">= 1.2.0"
+      version = ">= 1.2.4"
       source  = "github.com/hashicorp/proxmox"
     }
   }
@@ -14,7 +14,7 @@ variable "proxmox_url" {
 
 variable "proxmox_username" {
   type    = string
-  default = "root@pam!packer"
+  default = "automation@pve!packer-terraform"
 }
 
 variable "proxmox_token" {
@@ -24,7 +24,7 @@ variable "proxmox_token" {
 
 variable "proxmox_node" {
   type        = string
-  description = "Proxmox node name, e.g. pve (your Dell Precision 3280)"
+  description = "Proxmox node name, e.g. pve"
 }
 
 variable "iso_storage_pool" {
@@ -63,14 +63,15 @@ source "proxmox-iso" "debian13-k3s" {
   vm_id                = 9000
   vm_name              = "debian13-k3s-template"
   template_description = "Debian 13 (Trixie) + qemu-guest-agent + cloud-init, ready for k3s. Built by Packer on ${timestamp()}"
+  
+  # Correct block syntax for modern Proxmox plugin local ISO maps
+  boot_iso {
+    type     = "ide"
+    iso_file = "local:iso/debian-13.2.0-amd64-netinst.iso"
+    unmount  = true
+  }
 
-  iso_url          = "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-13.0.0-amd64-netinst.iso"
-  iso_checksum     = "file:https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/SHA256SUMS"
-  iso_storage_pool = var.iso_storage_pool
-  unmount_iso      = true
-
-  qemu_agent = true
-
+  qemu_agent      = true
   scsi_controller = "virtio-scsi-single"
 
   disks {
@@ -86,7 +87,6 @@ source "proxmox-iso" "debian13-k3s" {
   sockets  = 1
   cpu_type = "host"
   memory   = 2048
-  # Matches your note: no ballooning device.
   ballooning_minimum = 0
 
   network_adapters {
@@ -95,15 +95,15 @@ source "proxmox-iso" "debian13-k3s" {
     firewall = false
   }
 
-  cloud_init              = false # we install/enable cloud-init ourselves in provision.sh, template stays generic
-  boot_wait                = "10s"
+  cloud_init   = false # we install/enable cloud-init ourselves in provision.sh, template stays generic
+  boot_wait    = "10s"
   boot_command = [
     "<esc><wait>",
     "auto url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg ",
     "hostname=debian13-template domain=local ",
     "interface=auto ",
     "<enter>"
-  ]
+  ] 
 
   http_directory = "http"
 
@@ -124,3 +124,4 @@ build {
     execute_command = "echo '${var.ssh_password}' | sudo -S sh -c '{{ .Vars }} {{ .Path }}'"
   }
 }
+

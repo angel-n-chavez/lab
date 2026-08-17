@@ -1,0 +1,3 @@
+# ignore secrets and variables for packer and terraform
+*/variables.pkrvars.hcl
+*/secrets.pkrvars.hcl
