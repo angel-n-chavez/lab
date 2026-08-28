@@ -42,6 +42,23 @@ variable "bridge" {
   default = "vmbr0"
 }
 
+variable "vm_id" {
+  type        = number
+  default     = 9000
+  description = "override to 9001 for one-off/manual templates so they never collide with the real one Terraform clones from."
+}
+
+variable "vm_name" {
+  type    = string
+  default = "debian13-k3s-template"
+}
+
+variable "provision_script" {
+  type        = string
+  default     = "scripts/provision.sh"
+  description = "override to scripts/provision-manual.sh to build a template I can manually log into directly without cloud-init."
+}
+
 variable "ssh_username" {
   type    = string
   default = "debian"
