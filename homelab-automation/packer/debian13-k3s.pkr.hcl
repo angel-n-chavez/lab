@@ -77,8 +77,8 @@ source "proxmox-iso" "debian13-k3s" {
   insecure_skip_tls_verify = true
 
   node                 = var.proxmox_node
-  vm_id                = 9000
-  vm_name              = "debian13-k3s-template"
+  vm_id                = var.vm_id 
+  vm_name              = var.vm_name
   template_description = "Debian 13 (Trixie) + qemu-guest-agent + cloud-init, ready for k3s. Built by Packer on ${timestamp()}"
   
   # Correct block syntax for modern Proxmox plugin local ISO maps
@@ -137,7 +137,7 @@ build {
   sources = ["source.proxmox-iso.debian13-k3s"]
 
   provisioner "shell" {
-    script          = "scripts/provision.sh"
+    script          = var.provision_script
     execute_command = "echo '${var.ssh_password}' | sudo -S sh -c '{{ .Vars }} {{ .Path }}'"
   }
 }

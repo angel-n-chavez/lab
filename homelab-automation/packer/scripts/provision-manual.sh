@@ -26,7 +26,7 @@ truncate -s 0 /etc/machine-id
 rm -f /var/lib/dbus/machine-id
 ln -s /etc/machine-id /var/lib/dbus/machine-id
 
-rm -f /etc/ssh/ssh_host_*
+# rm -f /etc/ssh/ssh_host_*  # removed so that I can ssh into VM created manually from this template.
 
 cloud-init clean --logs --seed || true
 
