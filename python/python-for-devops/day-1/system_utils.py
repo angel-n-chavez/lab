@@ -13,4 +13,4 @@ def check_system_info():
         "disk" : disk,
     }
 
-    print(system_info)
+    return system_info
