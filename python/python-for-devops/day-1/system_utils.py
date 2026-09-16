@@ -4,8 +4,8 @@ import psutil
 
 def check_system_info():
     cpu = psutil.cpu_percent(interval=1)
-    mem = psutil.virtual_memory()
-    disk = psutil.disk_usage('/')
+    mem = psutil.virtual_memory()._asdict()
+    disk = psutil.disk_usage('/')._asdict()
 
     system_info = {
         "cpu" : cpu,
