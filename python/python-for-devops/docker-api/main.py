@@ -1,33 +1,40 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
-from docker_utils import docker_images, docker_containers, run_hello_world
+from docker_utils import get_images, get_containers, run_container
 
 app = FastAPI(title="Docker Utils API")
 
-@app.get("/docker-images")
+# trying out pydantic base models
+class ContainerSchema(BaseModel):
+    """
+    Class for standardizing/validate input for creating container
+    """
+    image: str = "alpine"
+    command: str = "echo 'Hello World'"
+
+@app.get("/images")
 def get_docker_images():
     """
     This API gets the docker metrics from daemon running on my dev machine
     """
 
-    return docker_images()
+    return get_images()
 
-@app.get("/running-containers")
-def get_running_containers():
+@app.get("/containers")
+def get_running_containers(all: bool = Query(True, description="Filter to show all or running containers")):
     """
     This API gets a list of all of the running containers on my dev machine
     """
+    return get_containers(all_containers=all)
 
-    return docker_containers()
-
-@app.post("/run-alpine")
-def run_container():
+@app.post("/containers", status_code=201)
+def run_new_container(payload: ContainerSchema):
     """
-    This API sends a request to run a basic alpine 'Hello World' container
+    RESTful POST that creates a new container
     """
 
     try:
-        result = run_hello_world()
-        return {"status" : "sucess", "status" : result}
+        result = run_container(payload.image, payload.command)
+        return {"status": "success", "container_id": result["id"], "logs": result["logs"]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

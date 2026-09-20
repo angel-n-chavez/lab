@@ -1,23 +1,22 @@
 import docker
 
+# instance of docker client to communicate with the docker daemon
 client = docker.from_env()
 
-def docker_images():
+def get_images():
     """
     function that returns a list of docker images on a system
     """
-
-    # instance of docker client to communicate with the docker daemon
     docker_images = client.images.list()
-
     return [image.tags for image in docker_images]
 
-def docker_containers():
+def get_containers(all_containers: bool = True):
     """
     function that returns a list of running containers
     """
-    running_containers = client.containers.list(all=True)
 
+    # filters based on boolean passed into REST query param
+    running_containers = client.containers.list(all=all_containers)
     return [
         {
             "id" : container.short_id,
@@ -28,11 +27,19 @@ def docker_containers():
         for container in running_containers
     ]
 
-def run_hello_world():
+def run_container(image: str, command: str):
     """
-    function that runs alpine hello world docker container
+    function that takes in 2 str parameters/args 'image' type to run
+    and a 'command' command to run inside the container
     """
-    container = client.containers.run('alpine','sleep 30', detach=True)
-    output_bytes = container.logs()
+    container = client.containers.run(image, command, detach=True)
 
-    return output_bytes.decode("utf-8").strip()
+    container.wait()    # freezes terminal until container stops then returns exit code
+
+    output_bytes = container.logs()
+    container_info = {
+        "id" : container.short_id,
+        "logs" : output_bytes.decode("utf-8").strip()
+    }
+
+    return container_info
