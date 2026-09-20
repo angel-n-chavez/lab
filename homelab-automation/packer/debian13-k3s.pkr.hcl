@@ -77,10 +77,10 @@ source "proxmox-iso" "debian13-k3s" {
   insecure_skip_tls_verify = true
 
   node                 = var.proxmox_node
-  vm_id                = var.vm_id 
+  vm_id                = var.vm_id
   vm_name              = var.vm_name
   template_description = "Debian 13 (Trixie) + qemu-guest-agent + cloud-init, ready for k3s. Built by Packer on ${timestamp()}"
-  
+
   # Correct block syntax for modern Proxmox plugin local ISO maps
   boot_iso {
     type     = "ide"
@@ -120,7 +120,7 @@ source "proxmox-iso" "debian13-k3s" {
     "hostname=debian13-template domain=local ",
     "interface=auto ",
     "<enter>"
-  ] 
+  ]
 
   http_directory = "http"
 
