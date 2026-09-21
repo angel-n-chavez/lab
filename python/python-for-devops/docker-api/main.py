@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
+from docker.errors import ImageNotFound, APIError
 from docker_utils import get_images, get_containers, run_container
 
 app = FastAPI(title="Docker Utils API")
@@ -36,5 +37,9 @@ def run_new_container(payload: ContainerSchema):
     try:
         result = run_container(payload.image, payload.command)
         return {"status": "success", "container_id": result["id"], "logs": result["logs"]}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except ImageNotFound:
+        raise HTTPException(status_code=404, detail=f"Image '{payload.image}' not found")
+    except TimeoutError as e:
+        raise HTTPException(status_code=504, detail=str(e))
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=f"Docker daemon error: {e}")
