@@ -12,8 +12,15 @@ def get_images():
     """
     function that returns a list of docker images on a system
     """
-    docker_images = client.images.list()
-    return [image.tags for image in docker_images]
+    images = client.images.list()
+    return [
+        {
+            "Image": img.tags,
+            "ID": img.short_id,
+            "Labels": img.labels
+        }
+        for img in images
+    ]
 
 
 def get_containers(all_containers: bool = True):
