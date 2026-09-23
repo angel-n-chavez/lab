@@ -60,4 +60,5 @@ def run_container(image: str, command: str, timeout: int = CONTAINER_WAIT_TIMEOU
         "logs": output_bytes.decode("utf-8").strip()
     }
 
+    container.remove()
     return container_info
