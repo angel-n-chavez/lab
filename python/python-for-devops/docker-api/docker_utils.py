@@ -1,11 +1,12 @@
 import docker
-from docker.errors import NotFound
 from requests.exceptions import ReadTimeout
 
 # instance of docker client to communicate with the docker daemon
 client = docker.from_env()
 
-CONTAINER_WAIT_TIMEOUT = 15  # bounds how long a request can block on a client-supplied cmd
+CONTAINER_WAIT_TIMEOUT = (
+    15  # bounds how long a request can block on a client-supplied cmd
+)
 
 
 def get_images():
@@ -14,12 +15,7 @@ def get_images():
     """
     images = client.images.list()
     return [
-        {
-            "Image": img.tags,
-            "ID": img.short_id,
-            "Labels": img.labels
-        }
-        for img in images
+        {"Image": img.tags, "ID": img.short_id, "Labels": img.labels} for img in images
     ]
 
 
@@ -35,7 +31,7 @@ def get_containers(all_containers: bool = True):
             "id": container.short_id,
             "name": container.name,
             "status": container.status,
-            "image": container.image.tags[0] if container.image.tags else "None"
+            "image": container.image.tags[0] if container.image.tags else "None",
         }
         for container in running_containers
     ]
@@ -48,7 +44,9 @@ def run_container(image: str, command: str, timeout: int = CONTAINER_WAIT_TIMEOU
     """
     container = client.containers.run(image, command, detach=True)
     try:
-        container.wait(timeout=timeout)    # freezes terminal until container stops then returns exit code
+        container.wait(
+            timeout=timeout
+        )  # freezes terminal until container stops then returns exit code
     except ReadTimeout:
         container.stop(timeout=5)
         container.remove()
@@ -57,8 +55,17 @@ def run_container(image: str, command: str, timeout: int = CONTAINER_WAIT_TIMEOU
     output_bytes = container.logs()
     container_info = {
         "id": container.short_id,
-        "logs": output_bytes.decode("utf-8").strip()
+        "logs": output_bytes.decode("utf-8").strip(),
     }
 
     container.remove()
     return container_info
+
+
+def get_data_usage():
+    """
+    Gets data usage info. Return type: dict. Raises: docker.errors.APIError
+    """
+
+    disk_usage = client.df()
+    return disk_usage
