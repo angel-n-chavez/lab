@@ -68,4 +68,37 @@ def get_data_usage():
     """
 
     disk_usage = client.df()
+
+    # 1. Calculate Image Sizes
+    images = disk_usage.get("Images", [])
+    total_image_size = sum(img.get("Size", 0) for img in images)
+
+    # Identify dangling images (no RepoTags or RepoTags is None/empty)
+    dangling_images = [img for img in images if not img.get("RepoTags")]
+    reclaimable_image_size = sum(img.get("Size", 0) for img in dangling_images)
+
+    # 2. Calculate Container Sizes
+    containers = disk_usage.get("Containers", [])
+    # SizeRw is the container's unique write layer size on disk
+    total_container_size = sum(c.get("SizeRw", 0) for c in containers)
+
+    # Reclaimable container space comes from 'exited' or 'dead' containers
+    stopped_containers = [c for c in containers if c.get("State") in ["exited", "dead"]]
+    reclaimable_container_size = sum(c.get("SizeRw", 0) for c in stopped_containers)
+
+    # 3. Convert bytes to Megabytes for readability
+    return {
+        "images": {
+            "total_count": len(images),
+            "total_size_mb": round(total_image_size / (1024 * 1024), 2),
+            "reclaimable_size_mb": round(reclaimable_image_size / (1024 * 1024), 2),
+        },
+        "containers": {
+            "total_count": len(containers),
+            "stopped_count": len(stopped_containers),
+            "total_size_mb": round(total_container_size / (1024 * 1024), 2),
+            "reclaimable_size_mb": round(reclaimable_container_size / (1024 * 1024), 2),
+        },
+    }
+
     return disk_usage
