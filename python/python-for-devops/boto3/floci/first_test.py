@@ -1,17 +1,24 @@
 import boto3
 
-def floci_client(service):
-    return boto3.client(
-        service,
-        endpoint_url="http://floci:4566",
-        region_name="us-east-1",
-        aws_access_key_id="test",
-        aws_secret_access_key="test",
-    )
+# Using seesion I dont need a floci client helper function
+session = boto3.Session(profile_name="floci")
+s3 = session.client("s3")
 
+create_bucket = s3.create_bucket(
+    Bucket="boto3-floci-test",
+    CreateBucketConfiguration={
+        "Tags": [
+            {"Key": "Test", "Value": "Floci"},
+        ]
+    },
+)
 
-s3 = floci_client("s3")
-
-response = s3.list_buckets()
-for bucket in response.get("Buckets", []):
-    print(bucket["Name"])
+# when working with unpredictible APIs use get() instead of square brackets
+# prevents KeyErrors
+list_buckets = s3.list_buckets()
+for bucket in list_buckets.get("Buckets", []):
+    print(f"Bucket Name: {bucket.get('Name')}")
+    print(f"Bucket Created: {bucket.get('CreationDate')}")
+    print(
+        f"Bucket Arn: {bucket.get('BucketArn')}"
+    )  # without get() this would throw a KeyError, because BucketArn is a new API addition and Floci will not recognize it.
