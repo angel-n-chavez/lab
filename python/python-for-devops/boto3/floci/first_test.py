@@ -1,17 +1,24 @@
 import boto3
+from botocore.exceptions import ClientError
 
 # Using seesion I dont need a floci client helper function
 session = boto3.Session(profile_name="floci")
 s3 = session.client("s3")
 
-create_bucket = s3.create_bucket(
-    Bucket="boto3-floci-test",
-    CreateBucketConfiguration={
-        "Tags": [
-            {"Key": "Test", "Value": "Floci"},
-        ]
-    },
-)
+try:
+    create_bucket = s3.create_bucket(
+        Bucket="boto3-floci-test",
+        CreateBucketConfiguration={
+            "Tags": [
+                {"Key": "Test", "Value": "Floci"},
+            ]
+        },
+    )
+except ClientError as e:
+    if e.response.get("Error", {}).get("Code") == "BucketAlreadyOwnedByYou":
+        print("Error Message: {}".format(e.response.get("Error", {}).get("Message")))
+    else:
+        raise
 
 # when working with unpredictible APIs use get() instead of square brackets
 # prevents KeyErrors
